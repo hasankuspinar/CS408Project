@@ -11,24 +11,55 @@ class Client:
         self.download_directory = None
 
     def connect_to_server(self, ip, port, username):
-        try:
-            self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.client_socket.connect((ip, port))
-            self.client_socket.send(username.encode())
-            response = self.client_socket.recv(1024).decode()
-            if response == "CONNECTED":
-                self.log_message(f"Connected to server as {username}.")
-                self.username = username
-                self.server_ip = ip
-                self.server_port = port
-                return True
-            else:
-                self.log_message(response)
-                self.client_socket.close()
-                return False
-        except Exception as e:
-            self.log_message(f"Error connecting to server: {e}")
-            return False
+        max_attempts = 3
+        for attempt in range(max_attempts):
+            try:
+                # Close any existing socket
+                if self.client_socket:
+                    try:
+                        self.client_socket.close()
+                    except:
+                        pass
+
+                # Create a new socket
+                self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                
+                # Set timeout for connection
+                self.client_socket.settimeout(10)  # 10 seconds timeout
+                
+                # Connect
+                self.client_socket.connect((ip, port))
+                
+                # Set longer timeout for operations
+                self.client_socket.settimeout(60)  # 60 seconds timeout
+                
+                # Send username
+                self.client_socket.send(username.encode())
+                
+                # Receive response
+                response = self.client_socket.recv(1024).decode()
+                
+                if response == "CONNECTED":
+                    self.log_message(f"Connected to server as {username}.")
+                    self.username = username
+                    self.server_ip = ip
+                    self.server_port = port
+                    return True
+                else:
+                    self.log_message(response)
+                    self.client_socket.close()
+                    return False
+
+            except (socket.timeout, ConnectionRefusedError, OSError) as e:
+                self.log_message(f"Connection attempt {attempt + 1} failed: {e}")
+                if attempt == max_attempts - 1:
+                    return False
+                
+                # Wait before retrying
+                import time
+                time.sleep(2)
+
+        return False
 
     def disconnect(self):
         try:
@@ -41,19 +72,43 @@ class Client:
 
     def upload_file(self, file_path):
         if not self.client_socket:
-            self.log_message("Not connected to a server.")
+            self.log_message("Error: Not connected to a server.")
             return
+
         try:
             filename = os.path.basename(file_path)
-            self.client_socket.send(f"UPLOAD {filename}".encode())
+            if not os.path.exists(file_path) or not filename.strip():
+                self.log_message("Error: Invalid file path or filename.")
+                return
+
+            # Get the file size
+            file_size = os.path.getsize(file_path)
+
+            # Notify the server about the upload, including the file size
+            self.log_message(f"Uploading file '{filename}'...")
+            self.client_socket.send(f"UPLOAD {filename} {file_size}".encode())
+
+            # Send the file content
             with open(file_path, "rb") as f:
                 while chunk := f.read(4096):
-                    self.client_socket.send(chunk)
-            self.client_socket.send(b"EOF")
-            response = self.client_socket.recv(1024).decode()
-            self.log_message(response)
+                    try:
+                        self.client_socket.sendall(chunk)
+                    except socket.error as e:
+                        self.log_message(f"Socket error while sending chunk: {e}")
+                        return
+
+            # Wait for server response
+            try:
+                response = self.client_socket.recv(1024).decode()
+                self.log_message(response)
+            except socket.error as e:
+                self.log_message(f"Error receiving server response: {e}")
+
         except Exception as e:
-            self.log_message(f"Error uploading file: {e}")
+            self.log_message(f"Unexpected error during upload: {e}")
+
+
+
 
     def request_file_list(self):
         try:
@@ -81,16 +136,27 @@ class Client:
             return
         try:
             self.client_socket.send(f"DOWNLOAD {filename} {owner}".encode())
+
+            # Wait for server response to check if file exists
+            initial_response = self.client_socket.recv(1024).decode()
+            if initial_response.startswith("ERROR"):
+                self.log_message(initial_response)
+                return
+
             save_path = os.path.join(self.download_directory, filename)
             with open(save_path, "wb") as f:
+                self.log_message(f"Downloading file '{filename}'...")
                 while True:
                     data = self.client_socket.recv(4096)
-                    if data == b"EOF":
+                    if not data:
                         break
                     f.write(data)
-            self.log_message(f"File {filename} downloaded successfully.")
+
+            self.log_message(f"File '{filename}' downloaded successfully.")
+
         except Exception as e:
             self.log_message(f"Error downloading file: {e}")
+
 
     def delete_file(self, filename):
         try:

@@ -1,2 +1,0 @@
-Yeni,hasan
-a.txt,hasan

@@ -1,0 +1,15 @@
+Error: File write error: [WinError 10054] Varolan bir baðlantý uzaktaki bir ana bilgisayar tarafýndan zorla kapatýldý
+Trace: Traceback (most recent call last):
+  File "C:\Users\egeoz\OneDrive\Masaüstü\CS408\Term Project\CS408Project\server.py", line 80, in handle_upload
+    data = client_socket.recv(4096)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+ConnectionResetError: [WinError 10054] Varolan bir baðlantý uzaktaki bir ana bilgisayar tarafýndan zorla kapatýldý
+
+
+Error: Upload failed: [WinError 10054] Varolan bir baðlantý uzaktaki bir ana bilgisayar tarafýndan zorla kapatýldý
+Trace: Traceback (most recent call last):
+  File "C:\Users\egeoz\OneDrive\Masaüstü\CS408\Term Project\CS408Project\server.py", line 102, in handle_upload
+    client_socket.send(success_msg.encode())
+ConnectionResetError: [WinError 10054] Varolan bir baðlantý uzaktaki bir ana bilgisayar tarafýndan zorla kapatýldý
+
+
