@@ -124,7 +124,6 @@ class Client:
         Button(self.root, text="View Files", command=self.request_file_list).pack()
         Button(self.root, text="Download File", command=self.download_gui).pack()
         Button(self.root, text="Delete File", command=self.delete_gui).pack()
-        Button(self.root, text="Set Download Directory", command=self.set_download_directory).pack()
         Button(self.root, text="Disconnect", command=self.disconnect_gui).pack()
 
         # Log Box
@@ -193,8 +192,6 @@ class Client:
         self.log_message(f"Download directory set to: {self.download_directory}")
         self.download_file(filename, owner)
 
-
-
     def delete_gui(self):
         if not self.client_socket:
             self.log_message("Not connected to a server.")
@@ -207,12 +204,6 @@ class Client:
             return
 
         self.delete_file(filename)
-
-
-    def set_download_directory(self):
-        self.download_directory = filedialog.askdirectory()
-        if self.download_directory:
-            self.log_message(f"Download directory set to: {self.download_directory}")
 
     def disconnect_gui(self):
         self.disconnect()

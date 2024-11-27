@@ -60,14 +60,24 @@ class Server:
         filename = command.split(" ")[1]
         full_filename = f"{client_name}_{filename}"
         filepath = os.path.join(self.file_directory, full_filename)
+
+        # Check if the file already exists
+        if os.path.exists(filepath):
+            self.log_message(f"File {filename} by {client_name} already exists. Overwriting.")
+
+        # Write the file data
         with open(filepath, "wb") as f:
             while True:
                 data = client_socket.recv(4096)
                 if data == b"EOF":
                     break
                 f.write(data)
+
+        # Update the file list
+        self.file_list = [(f, o) for f, o in self.file_list if not (f == filename and o == client_name)]
         self.file_list.append((filename, client_name))
-        self.update_file_list()  # Update the persistent file list
+        self.update_file_list()  # Persist the updated file list
+
         self.log_message(f"{client_name} uploaded {filename}.")
         client_socket.send(f"File {filename} uploaded successfully.".encode())
 
