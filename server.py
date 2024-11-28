@@ -1,7 +1,6 @@
 import os
 import socket
 import threading
-import shutil
 from tkinter import Tk, Label, Button, Listbox, Scrollbar, filedialog, Entry, END, messagebox
 import traceback
 
@@ -9,6 +8,7 @@ class Server:
     def __init__(self):
         self.server_socket = None
         self.clients = {}
+        self.clients_lock = threading.Lock()
         self.file_directory = None
         self.file_list = []
         self.error_log = []
@@ -24,38 +24,45 @@ class Server:
             self.log_message(f"Error starting server: {e}")
 
     def accept_clients(self):
-        while True:
-            try:
-                client_socket, client_address = self.server_socket.accept()
-                threading.Thread(target=self.handle_client, args=(client_socket,)).start()
-            except Exception as e:
-                self.log_message(f"Error accepting clients: {e}")
-                break
+        try:
+            while True:
+                try:
+                    client_socket, client_address = self.server_socket.accept()
+                    threading.Thread(target=self.handle_client, args=(client_socket,)).start()
+                except OSError:
+                    # Server socket has been closed
+                    break
+        except Exception as e:
+            self.log_message(f"Error accepting clients: {e}")
+
 
     def handle_client(self, client_socket):
         client_name = None
+        disconnection_logged = False
+        client_registered = False
         try:
-            # Set a longer timeout
             client_socket.settimeout(60)  # 60 seconds timeout
 
             client_name = client_socket.recv(1024).decode()
-            if client_name in self.clients:
-                client_socket.send("ERROR: Username already connected.".encode())
-                client_socket.close()
-                return
+            with self.clients_lock:
+                if client_name in self.clients:
+                    client_socket.send("ERROR: Username already connected.".encode())
+                    client_socket.close()
+                    return
+                self.clients[client_name] = client_socket
+                client_registered = True  # Mark as registered
 
-            self.clients[client_name] = client_socket
             self.log_message(f"Client connected: {client_name}")
             client_socket.send("CONNECTED".encode())
 
             while True:
                 try:
-                    # Use a longer timeout for receiving commands
                     client_socket.settimeout(300)  # 5 minutes
                     command = client_socket.recv(1024).decode()
-                    
+
                     if not command:
-                        # Empty command might indicate connection loss
+                        self.log_message(f"Client {client_name} disconnected.")
+                        disconnection_logged = True
                         break
 
                     if command.startswith("UPLOAD"):
@@ -67,13 +74,22 @@ class Server:
                     elif command.startswith("DOWNLOAD"):
                         self.handle_download(client_socket, command)
                     elif command == "DISCONNECT":
+                        self.log_message(f"Client {client_name} requested disconnection.")
+                        disconnection_logged = True
+                        # Remove client from self.clients immediately
+                        with self.clients_lock:
+                            if client_name in self.clients:
+                                del self.clients[client_name]
                         break
 
+
                 except socket.timeout:
-                    self.log_message(f"Socket timeout for {client_name}")
+                    self.log_message(f"Client {client_name} disconnected due to timeout.")
+                    disconnection_logged = True
                     break
                 except (ConnectionResetError, BrokenPipeError) as conn_error:
-                    self.log_message(f"Connection error with {client_name}: {conn_error}")
+                    self.log_message(f"Client {client_name} disconnected unexpectedly: {conn_error}")
+                    disconnection_logged = True
                     break
 
         except Exception as e:
@@ -81,11 +97,18 @@ class Server:
         finally:
             # Ensure cleanup happens
             try:
-                if client_name and client_name in self.clients:
-                    del self.clients[client_name]
+                with self.clients_lock:
+                    # Only remove if the client was registered by this handler
+                    if client_registered and client_name and client_name in self.clients:
+                        del self.clients[client_name]
+                        if not disconnection_logged:
+                            self.log_message(f"Client {client_name} disconnected.")
                 client_socket.close()
-            except:
-                pass
+            except Exception as e:
+                self.log_message(f"Error during cleanup for client {client_name}: {e}")
+
+
+
             
     def handle_upload(self, client_name, client_socket, command):
         try:
@@ -219,18 +242,31 @@ class Server:
             full_filename = f"{client_name}_{filename}"
             filepath = os.path.join(self.file_directory, full_filename)
 
-            if not os.path.exists(filepath):
-                error_msg = f"ERROR: File '{filename}' does not exist."
-                client_socket.send(error_msg.encode())
-                self.log_message(error_msg)
-                return
-
-            os.remove(filepath)
-            self.file_list = [(f, o) for f, o in self.file_list if not (f == filename and o == client_name)]
-            self.update_file_list()
-            success_msg = f"{client_name} deleted file '{filename}'."
-            client_socket.send(f"File '{filename}' deleted successfully.".encode())
-            self.log_message(success_msg)
+            if os.path.exists(filepath):
+                # File exists and is owned by the client
+                os.remove(filepath)
+                self.file_list = [(f, o) for f, o in self.file_list if not (f == filename and o == client_name)]
+                self.update_file_list()
+                success_msg = f"File '{filename}' deleted successfully."
+                client_socket.send(success_msg.encode())
+                self.log_message(f"{client_name} deleted file '{filename}'.")
+            else:
+                # Check if the file exists but is owned by another client
+                file_exists = False
+                for f, o in self.file_list:
+                    if f == filename:
+                        file_exists = True
+                        if o != client_name:
+                            # File is owned by someone else
+                            error_msg = "ERROR: You cannot delete a file you didn't upload."
+                            client_socket.send(error_msg.encode())
+                            self.log_message(f"{client_name} attempted to delete '{filename}' owned by '{o}'.")
+                            return
+                if not file_exists:
+                    # File does not exist at all
+                    error_msg = f"ERROR: File '{filename}' does not exist."
+                    client_socket.send(error_msg.encode())
+                    self.log_message(error_msg)
 
         except Exception as e:
             error_msg = f"Error during file deletion: {e}"
@@ -256,12 +292,22 @@ class Server:
                 self.log_message(error_msg)
                 return
 
+            # Get the file size
+            file_size = os.path.getsize(filepath)
+            # Send the file size to the client
+            client_socket.send(f"FILESIZE {file_size}".encode())
+
+            # Wait for acknowledgment from the client
+            ack = client_socket.recv(1024).decode()
+            if ack != "READY":
+                self.log_message("Client not ready to receive file.")
+                return
+
             with open(filepath, "rb") as f:
                 self.log_message(f"Starting download of file '{filename}' for client.")
                 while chunk := f.read(4096):
                     client_socket.sendall(chunk)
 
-            # Optionally, send a completion message or marker if your protocol requires it
             self.log_message(f"File '{filename}' by '{owner}' downloaded successfully.")
 
         except Exception as e:
@@ -271,6 +317,7 @@ class Server:
                 client_socket.send(f"ERROR: {e}".encode())
             except:
                 self.log_message("Failed to send error message to client.")
+
 
     def handle_disconnect(self, client_name):
         if client_name in self.clients:
@@ -304,16 +351,20 @@ class Server:
     def setup_gui(self):
         self.root = Tk()
         self.root.title("Server")
+        self.root.geometry("600x400")
+
         Label(self.root, text="Port:").pack()
         self.port_entry = Entry(self.root)
         self.port_entry.pack()
         Button(self.root, text="Start Server", command=self.start_server_gui).pack()
         Button(self.root, text="Select Directory", command=self.select_directory).pack()
-        Button(self.root, text="View Errors", command=self.show_errors).pack()
+        Button(self.root, text="Close Server", command=self.close_server).pack()
         self.log_listbox = Listbox(self.root)
         self.log_listbox.pack(fill="both", expand=True)
         Scrollbar(self.root, command=self.log_listbox.yview).pack(side="right", fill="y")
+        self.root.protocol("WM_DELETE_WINDOW", self.close_server)
         self.root.mainloop()
+
 
     def start_server_gui(self):
         if not self.file_directory:
@@ -325,11 +376,45 @@ class Server:
         except ValueError:
             self.log_message("Error: Please enter a valid port number.")
 
+    def close_server(self):
+        try:
+            self.log_message("Shutting down server...")
+            # Stop accepting new clients
+            if self.server_socket:
+                self.server_socket.close()
+                self.server_socket = None
+
+            # Close all client connections
+            for client_name in list(self.clients.keys()):
+                client_socket = self.clients[client_name]
+                try:
+                    client_socket.send("DISCONNECT".encode())
+                    client_socket.close()
+                except:
+                    pass
+                self.log_message(f"Disconnected client {client_name}")
+            self.clients.clear()
+
+            # Exit the application
+            self.root.quit()
+            self.root.destroy()
+            self.log_message("Server closed successfully.")
+        except Exception as e:
+            self.log_message(f"Error closing server: {e}")
+            self.root.quit()
+            self.root.destroy()
+
+
 
     def select_directory(self):
-        self.file_directory = filedialog.askdirectory()
+        selected_directory = filedialog.askdirectory()
+        if not selected_directory:
+            self.log_message("Directory not selected.")
+            return
+        self.file_directory = selected_directory
         self.log_message(f"File directory set to: {self.file_directory}")
-        self.load_file_list()  
+        self.load_file_list()
+
 
     def show_errors(self):
         if not self.error_log:

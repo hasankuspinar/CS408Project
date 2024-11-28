@@ -18,8 +18,10 @@ class Client:
                 if self.client_socket:
                     try:
                         self.client_socket.close()
+                        self.client_socket = None
                     except:
                         pass
+                    self.client_socket = None  # Reset to None
 
                 # Create a new socket
                 self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -45,30 +47,41 @@ class Client:
                     self.server_ip = ip
                     self.server_port = port
                     return True
-                else:
+                elif response.startswith("ERROR"):
                     self.log_message(response)
                     self.client_socket.close()
+                    self.client_socket = None  # Reset to None
+                    return False
+                else:
+                    self.log_message(f"Unexpected response from server: {response}")
+                    self.client_socket.close()
+                    self.client_socket = None  # Reset to None
                     return False
 
             except (socket.timeout, ConnectionRefusedError, OSError) as e:
                 self.log_message(f"Connection attempt {attempt + 1} failed: {e}")
                 if attempt == max_attempts - 1:
+                    self.client_socket = None  # Reset to None
                     return False
-                
-                # Wait before retrying
                 import time
                 time.sleep(2)
+                self.client_socket = None  # Reset to None before retrying
 
         return False
+
 
     def disconnect(self):
         try:
             if self.client_socket:
                 self.client_socket.send("DISCONNECT".encode())
                 self.client_socket.close()
+                self.client_socket = None
                 self.log_message("Disconnected from server.")
+                self.username = None  # Reset username
         except Exception as e:
             self.log_message(f"Error disconnecting: {e}")
+            self.client_socket = None  # Ensure client_socket is reset
+            self.username = None  # Reset username
 
     def upload_file(self, file_path):
         if not self.client_socket:
@@ -107,9 +120,6 @@ class Client:
         except Exception as e:
             self.log_message(f"Unexpected error during upload: {e}")
 
-
-
-
     def request_file_list(self):
         try:
             if not self.client_socket:
@@ -123,11 +133,15 @@ class Client:
             # Display the file list in the log box
             if file_list.strip():
                 self.log_message("Files on server:")
-                self.log_message(file_list)
+                # Split the file list into lines
+                file_lines = file_list.strip().split('\n')
+                for line in file_lines:
+                    self.log_message(line)
             else:
                 self.log_message("No files available on the server.")
         except Exception as e:
             self.log_message(f"Error requesting file list: {e}")
+
 
 
     def download_file(self, filename, owner):
@@ -137,20 +151,35 @@ class Client:
         try:
             self.client_socket.send(f"DOWNLOAD {filename} {owner}".encode())
 
-            # Wait for server response to check if file exists
+            # Wait for server response to check if file exists or get file size
             initial_response = self.client_socket.recv(1024).decode()
             if initial_response.startswith("ERROR"):
                 self.log_message(initial_response)
                 return
+            elif initial_response.startswith("FILESIZE"):
+                parts = initial_response.split(" ")
+                if len(parts) != 2:
+                    self.log_message("Invalid response from server.")
+                    return
+                file_size = int(parts[1])
+            else:
+                self.log_message(f"Unexpected response from server: {initial_response}")
+                return
+
+            # Send acknowledgment to server
+            self.client_socket.send("READY".encode())
 
             save_path = os.path.join(self.download_directory, filename)
             with open(save_path, "wb") as f:
-                self.log_message(f"Downloading file '{filename}'...")
-                while True:
-                    data = self.client_socket.recv(4096)
+                self.log_message(f"Downloading file '{filename}'")
+                bytes_received = 0
+                while bytes_received < file_size:
+                    chunk_size = min(4096, file_size - bytes_received)
+                    data = self.client_socket.recv(chunk_size)
                     if not data:
-                        break
+                        raise ConnectionError("Connection lost during download.")
                     f.write(data)
+                    bytes_received += len(data)
 
             self.log_message(f"File '{filename}' downloaded successfully.")
 
@@ -172,6 +201,7 @@ class Client:
     def setup_gui(self):
         self.root = Tk()
         self.root.title("Client")
+        self.root.geometry("600x400")
 
         # Server Connection Frame
         Label(self.root, text="Server IP:").pack()
@@ -204,6 +234,15 @@ class Client:
         port = self.port_entry.get().strip()
         username = self.username_entry.get().strip()
 
+        if self.client_socket:
+            response = messagebox.askyesno("Reconnect", "You are already connected. Do you want to reconnect?")
+            if response:
+                self.disconnect()
+                import time
+                time.sleep(0.5)
+            else:
+                return
+
         # Validate IP address
         if not ip:
             self.log_message("Error! IP address cannot be empty.")
@@ -227,9 +266,16 @@ class Client:
 
 
     def upload_gui(self):
+        if not self.client_socket:
+            self.log_message("Not connected to a server.")
+            return
         file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
         if file_path:
             self.upload_file(file_path)
+        else:
+            self.log_message("Upload cancelled: No filename provided.")
+
+
 
     def download_gui(self):
         if not self.client_socket:
