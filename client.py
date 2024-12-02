@@ -58,7 +58,11 @@ class Client:
                     self.client_socket = None  # Reset to None
                     return False
 
-            except (socket.timeout, ConnectionRefusedError, OSError) as e:
+            except ConnectionRefusedError:
+                self.log_message("Server is not open.")
+                self.client_socket = None  # Reset to None
+                return False
+            except (socket.timeout, OSError) as e:
                 self.log_message(f"Connection attempt {attempt + 1} failed: {e}")
                 if attempt == max_attempts - 1:
                     self.client_socket = None  # Reset to None
@@ -69,6 +73,18 @@ class Client:
 
         return False
 
+    def handle_server_messages(self):
+        try:
+            while True:
+                message = self.client_socket.recv(1024).decode()
+                if message.startswith("SERVER_SHUTDOWN"):
+                    self.log_message("Server has been closed. Disconnecting...")
+                    self.disconnect()
+                    break
+                else:
+                    self.log_message(message)
+        except Exception as e:
+            self.log_message(f"Error receiving message from server: {e}")
 
     def disconnect(self):
         try:
@@ -142,8 +158,6 @@ class Client:
         except Exception as e:
             self.log_message(f"Error requesting file list: {e}")
 
-
-
     def download_file(self, filename, owner):
         if not self.download_directory:
             messagebox.showerror("Error", "Download directory not set.")
@@ -185,7 +199,6 @@ class Client:
 
         except Exception as e:
             self.log_message(f"Error downloading file: {e}")
-
 
     def delete_file(self, filename):
         try:
@@ -274,8 +287,6 @@ class Client:
             self.upload_file(file_path)
         else:
             self.log_message("Upload cancelled: No filename provided.")
-
-
 
     def download_gui(self):
         if not self.client_socket:
