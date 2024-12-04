@@ -1,0 +1,284 @@
+File directory set to: C:/Users/ASUS/Desktop/files_for_upload
+Loaded 1 files from file list.
+Server started on port 3060. Waiting for connections...
+Client connected: hasan
+Client hasan disconnected unexpectedly: [WinError 10054] Varolan bir baðlantý uzaktaki bir ana bilgisayar tarafýndan zorla kapatýldý
+Client connected: hasan
+Client hasan disconnected unexpectedly: [WinError 10054] Varolan bir baðlantý uzaktaki bir ana bilgisayar tarafýndan zorla kapatýldý
+File directory set to: C:/Users/ASUS/Desktop/files_for_upload
+Loaded 1 files from file list.
+Server started on port 3060. Waiting for connections...
+Client connected: hasan
+Client hasan disconnected unexpectedly: [WinError 10054] Varolan bir baðlantý uzaktaki bir ana bilgisayar tarafýndan zorla kapatýldý
+Shutting down server...
+File directory set to: C:/Users/ASUS/Desktop/files_for_upload
+Loaded 1 files from file list.
+Server started on port 3060. Waiting for connections...
+Client connected: hasan
+Client hasan disconnected unexpectedly: [WinError 10054] Varolan bir baðlantý uzaktaki bir ana bilgisayar tarafýndan zorla kapatýldý
+File directory set to: C:/Users/ASUS/Desktop/files_for_upload
+Loaded 1 files from file list.
+Server started on port 3060. Waiting for connections...
+Client connected: hasan
+Client hasan disconnected unexpectedly: [WinError 10054] Varolan bir baðlantý uzaktaki bir ana bilgisayar tarafýndan zorla kapatýldý
+Client connected: hasan
+Client hasan disconnected unexpectedly: [WinError 10054] Varolan bir baðlantý uzaktaki bir ana bilgisayar tarafýndan zorla kapatýldý
+Shutting down server...
+File directory set to: C:/Users/ASUS/Desktop/files_for_upload
+Loaded 1 files from file list.
+Shutting down server...
+File directory set to: C:/Users/ASUS/Desktop/files_for_upload
+Loaded 1 files from file list.
+Server started on port 3060. Waiting for connections...
+Client connected: hasan
+File list sent to client.
+Receiving file: a.txt from hasan...
+Updated file list with 2 files.
+File 'a.txt' uploaded successfully.
+File list sent to client.
+Starting download of file 'a.txt' for client.
+File 'a.txt' by 'hasan' downloaded successfully.
+Notification sent to uploader hasan.
+File list sent to client.
+Client connected: ege
+ERROR: File 'hsn.txt' by 'ege' does not exist.
+hasan attempted to delete 'hsn.txt' owned by 'ege'.
+File list sent to client.
+Client hasan disconnected.
+Client ege disconnected.
+Shutting down server...
+File directory set to: C:/Users/ASUS/Desktop/downloaded_files
+Loaded 0 files from file list.
+File directory set to: C:/Users/ASUS/Desktop/files_for_upload
+Loaded 0 files from file list.
+Server started on port 3060. Waiting for connections...
+Client connected: hasan
+Client connected: ege
+Receiving file: a.txt from ege...
+Updated file list with 1 files.
+File 'a.txt' uploaded successfully.
+Client ege disconnected unexpectedly: [WinError 10054] Varolan bir baðlantý uzaktaki bir ana bilgisayar tarafýndan zorla kapatýldý
+Client hasan disconnected.
+Shutting down server...
+File directory set to: C:/Users/ASUS/Desktop/files_for_upload
+Loaded 1 files from file list.
+Server started on port 3060. Waiting for connections...
+Client connected: hasan
+File list sent to client.
+Receiving file: a.txt from hasan...
+Updated file list with 2 files.
+File 'a.txt' uploaded successfully.
+Client hasan disconnected unexpectedly: [WinError 10054] Varolan bir baðlantý uzaktaki bir ana bilgisayar tarafýndan zorla kapatýldý
+Shutting down server...
+File directory set to: C:/Users/ASUS/Desktop/files_for_upload
+Loaded 2 files from file list.
+Server started on port 3060. Waiting for connections...
+Client connected: hasan
+File list sent to client.
+Updated file list with 1 files.
+hasan deleted file 'a.txt'.
+File list sent to client.
+hasan attempted to delete 'a.txt' owned by 'ege'.
+Shutting down server...
+Sent shutdown notification to hasan
+Disconnected client hasan
+File directory set to: C:/Users/ASUS/Desktop/files_for_upload
+Loaded 1 files from file list.
+Server started on port 3060. Waiting for connections...
+Client connected: ege
+Client connected: hasan
+Client not ready to receive file.
+File list sent to client.
+Shutting down server...
+Sent shutdown notification to ege
+Disconnected client ege
+Sent shutdown notification to hasan
+Disconnected client hasan
+File directory set to: 'C:/Users/ASUS/Desktop/files_for_upload'
+Loaded 1 files from file list.
+Server started on port 3060. Waiting for connections...
+Received username: 'hasan'.
+Client 'hasan' connected.
+Received command from 'hasan': 'LIST'.
+Sent file list to client.
+Received command from 'hasan': 'UPLOAD hsn.txt 4'.
+Receiving file 'hsn.txt' (4 bytes) from 'hasan'.
+Received 4/4 bytes of 'hsn.txt'.
+Updated file list with 2 files.
+File 'hsn.txt' uploaded successfully by 'hasan'.
+Received command from 'hasan': 'LIST'.
+Sent file list to client.
+Received username: 'ege'.
+Client 'ege' connected.
+Received command from 'hasan': 'DOWNLOAD a.txt ege'.
+Sent FILESIZE for 'a.txt' to 'hasan'.
+Received acknowledgment from 'hasan': 'LIST'.
+Client 'hasan' not ready to receive the file.
+Received command from 'hasan': 'LIST'.
+Sent file list to client.
+Received command from 'hasan': 'LIST'.
+Sent file list to client.
+Received command from 'hasan': 'LIST'.
+Sent file list to client.
+Received command from 'hasan': 'LIST'.
+Sent file list to client.
+Received command from 'hasan': 'LIST'.
+Sent file list to client.
+Received command from 'hasan': 'LIST'.
+Sent file list to client.
+Received command from 'hasan': 'LIST'.
+Sent file list to client.
+Received command from 'hasan': 'LIST'.
+Sent file list to client.
+Received command from 'hasan': 'LIST'.
+Sent file list to client.
+Received command from 'hasan': 'LIST'.
+Sent file list to client.
+Received command from 'hasan': 'LIST'.
+Sent file list to client.
+Received command from 'hasan': 'LIST'.
+Sent file list to client.
+Received command from 'hasan': 'LIST'.
+Sent file list to client.
+Received command from 'ege': 'LIST'.
+Sent file list to client.
+Shutting down server...
+Sent shutdown notification to 'hasan'.
+Disconnected client 'hasan'.
+Sent shutdown notification to 'ege'.
+Disconnected client 'ege'.
+Stopped accepting new connections.
+Error: File directory must be selected before starting the server.
+File directory set to: C:/Users/ASUS/Desktop/files_for_upload
+Loaded 2 files from file list.
+Server started on port 3060. Waiting for connections...
+Client connected: hasan
+File list sent to client.
+Receiving file: file_list.txt from hasan...
+Received 26/26 bytes of 'file_list.txt'.
+Updated file list with 3 files.
+UPLOAD_SUCCESS: File 'file_list.txt' uploaded successfully.
+File list sent to client.
+Rejected connection from hasan: Username already connected.
+Client connected: ege
+File list sent to client.
+Sent FILESIZE 4 for 'hsn.txt' to 'ege'.
+Starting download of file 'hsn.txt' for client 'ege'.
+File 'hsn.txt' by 'hasan' downloaded successfully by 'ege'.
+Notified uploader 'hasan' about download of 'hsn.txt' by 'ege'.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+ege attempted to delete 'hsn.txt' owned by 'hasan'.
+Updated file list with 2 files.
+ege deleted file 'a.txt'.
+File list sent to client.
+File list sent to client.
+Receiving file: a.txt from ege...
+Received 5/5 bytes of 'a.txt'.
+Updated file list with 3 files.
+UPLOAD_SUCCESS: File 'a.txt' uploaded successfully.
+File list sent to client.
+File list sent to client.
+Sent FILESIZE 5 for 'a.txt' to 'hasan'.
+Starting download of file 'a.txt' for client 'hasan'.
+File 'a.txt' by 'ege' downloaded successfully by 'hasan'.
+Notified uploader 'ege' about download of 'a.txt' by 'hasan'.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+Updated file list with 2 files.
+hasan deleted file 'file_list.txt'.
+File list sent to client.
+File list sent to client.
+Sent FILESIZE 4 for 'hsn.txt' to 'ege'.
+Starting download of file 'hsn.txt' for client 'ege'.
+File 'hsn.txt' by 'hasan' downloaded successfully by 'ege'.
+Notified uploader 'hasan' about download of 'hsn.txt' by 'ege'.
+File list sent to client.
+File list sent to client.
+ERROR: File 'anan.txt' by 'ege' does not exist.
+File list sent to client.
+File list sent to client.
+Sent FILESIZE 5 for 'a.txt' to 'hasan'.
+Starting download of file 'a.txt' for client 'hasan'.
+File 'a.txt' by 'ege' downloaded successfully by 'hasan'.
+Notified uploader 'ege' about download of 'a.txt' by 'hasan'.
+File list sent to client.
+Sent FILESIZE 4 for 'hsn.txt' to 'ege'.
+Starting download of file 'hsn.txt' for client 'ege'.
+File 'hsn.txt' by 'hasan' downloaded successfully by 'ege'.
+Notified uploader 'hasan' about download of 'hsn.txt' by 'ege'.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+Shutting down server...
+Sent shutdown notification to hasan
+Disconnected client hasan
+Sent shutdown notification to ege
+Disconnected client ege
+File directory set to: C:/Users/ASUS/Desktop/files_for_upload
+Loaded 2 files from file list.
+Server started on port 3060. Waiting for connections...
+Client connected: hasan
+Client connected: ege
+File list sent to client.
+File list sent to client.
+Sent FILESIZE 5 for 'a.txt' to 'hasan'.
+Client hasan not ready to receive file 'a.txt'. Received ack: LIST
+File list sent to client.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+File list sent to client.
+hasan attempted to delete 'a.txt' owned by 'ege'.
+Shutting down server...
+Sent shutdown notification to hasan
+Disconnected client hasan
+Sent shutdown notification to ege
+Disconnected client ege
+Error: File directory must be selected before starting the server.
+Shutting down server...
+File directory set to: C:/Users/ASUS/Desktop/files_for_upload
+Loaded 2 files from file list.
+Server started on port 3060. Waiting for connections...
+Client connected: hasan
+Client connected: ege
+File list sent to client.
+File list sent to client.
+hasan attempted to delete 'a.txt' owned by 'ege'.
+Updated file list with 1 files.
+hasan deleted file 'hsn.txt'.
+File list sent to client.
+File list sent to client.
+Starting download of file 'a.txt' for client.
+File 'a.txt' by 'ege' downloaded successfully.
+Receiving file: a.txt from hasan...
+Updated file list with 2 files.
+File 'a.txt' uploaded successfully.
+File list sent to client.
+File list sent to client.
+Client ege disconnected.
+Client hasan disconnected.
+Shutting down server...
+File directory set to: C:/Users/ASUS/Desktop/files_for_upload
+Loaded 2 files from file list.
+Server started on port 3456. Waiting for connections...
+Shutting down server...
