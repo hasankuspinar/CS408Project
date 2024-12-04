@@ -383,7 +383,8 @@ class Server:
         Label(self.root, text="Port:").pack()
         self.port_entry = Entry(self.root, width=30)
         self.port_entry.pack()
-        Button(self.root, text="Start Server", command=self.start_server_gui).pack()
+        self.start_button = Button(self.root, text="Start Server", command=self.start_server_gui)
+        self.start_button.pack()
         Button(self.root, text="Select Directory", command=self.select_directory).pack()
         Button(self.root, text="Close Server", command=self.close_server).pack()
         self.log_listbox = Listbox(self.root)
@@ -391,7 +392,6 @@ class Server:
         scrollbar = Scrollbar(self.root, command=self.log_listbox.yview)
         scrollbar.pack(side="right", fill="y")
         self.log_listbox.config(yscrollcommand=scrollbar.set)
-        Button(self.root, text="Show Errors", command=self.show_errors).pack()
         self.root.protocol("WM_DELETE_WINDOW", self.close_server)
         self.root.mainloop()
 
@@ -399,9 +399,14 @@ class Server:
         if not self.file_directory:
             self.log_message("Error: File directory must be selected before starting the server.")
             return
+        if self.server_socket:  # Check if the server is already running
+            self.log_message("Server is already running.")
+            return
         try:
             port = int(self.port_entry.get())
             self.start_server(port)
+            # Disable the "Start Server" button
+            self.start_button.config(state='disabled')
         except ValueError:
             self.log_message("Error: Please enter a valid port number.")
 
@@ -428,6 +433,9 @@ class Server:
             if self.server_socket:
                 self.server_socket.close()
                 self.server_socket = None
+
+            # Re-enable the "Start Server" button
+            self.start_button.config(state='normal')
 
             # Exit the application
             self.root.quit()

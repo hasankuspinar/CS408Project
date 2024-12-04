@@ -86,6 +86,10 @@ class Client:
                 import time
                 time.sleep(2)
                 self.client_socket = None  # Reset to None before retrying
+            except Exception as e:
+                self.gui_queue.put(f"An unexpected error occurred: {e}")
+                self.client_socket = None
+                return False
 
         self.gui_queue.put("Failed to connect after multiple attempts.")
         return False
@@ -150,10 +154,10 @@ class Client:
                     self.gui_queue.put(upload_response)
                     if "overwritten" in upload_response.lower():
                         filename = self.current_download['filename'] if self.current_download else "unknown"
-                        messagebox.showinfo("File Overwritten", f"The file '{filename}' has been overwritten on the server.")
+                        self.gui_queue.put(f"SHOWINFO:File Overwritten:The file '{filename}' has been overwritten on the server.")
                     elif "uploaded successfully" in upload_response.lower():
                         filename = self.current_download['filename'] if self.current_download else "unknown"
-                        messagebox.showinfo("Upload Successful", f"The file '{filename}' has been uploaded successfully.")
+                        self.gui_queue.put(f"SHOWINFO:Upload Successful:The file '{filename}' has been uploaded successfully.")
                     continue  # Continue to next message
 
                 # Handle file download initiation
@@ -209,15 +213,19 @@ class Client:
         try:
             while not self.gui_queue.empty():
                 message = self.gui_queue.get_nowait()
-                if message.startswith("** Notification:"):
-                    # Show download notification as a popup
-                    if "downloaded" in message.lower():
-                        notification_text = message.replace("** Notification:", "").strip()
-                        messagebox.showinfo("Download Notification", notification_text)
-                    else:
-                        self.log_listbox.insert(END, message)
+                if message.startswith("SHOWINFO:"):
+                    # Parse the message to get the title and content
+                    _, title, content = message.split(":", 2)
+                    messagebox.showinfo(title, content)
+                elif message.startswith("SHOWWARNING:"):
+                    _, title, content = message.split(":", 2)
+                    messagebox.showwarning(title, content)
+                elif message.startswith("** Notification:"):
+                    # Existing code for notifications
+                    notification_text = message.replace("** Notification:", "").strip()
+                    messagebox.showinfo("Notification", notification_text)
                 elif message.startswith("** Server Shutdown:"):
-                    # Show server shutdown as a popup
+                    # Existing code for server shutdown
                     shutdown_text = message.replace("** Server Shutdown:", "").strip()
                     messagebox.showwarning("Server Shutdown", shutdown_text)
                 else:
@@ -230,6 +238,7 @@ class Client:
         finally:
             # Schedule the next check after 100 milliseconds
             self.root.after(100, self.process_gui_queue)
+
 
     def disconnect(self):
         try:
