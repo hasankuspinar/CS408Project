@@ -7,21 +7,21 @@ import traceback
 class Server:
     def __init__(self):
         self.server_socket = None
-        self.clients = {}  # Maps client names to sockets
-        self.clients_lock = threading.Lock()  # Lock for accessing clients dictionary
+        self.clients = {}  #for mapping client names to sockets
+        self.clients_lock = threading.Lock()  #lock for accessing clients dictionary
         self.file_directory = None
-        self.file_list = []  # List of tuples: (filename, owner)
-        self.file_list_lock = threading.Lock()  # Lock for accessing file_list
+        self.file_list = []  #tuples: (filename, owner)
+        self.file_list_lock = threading.Lock()  #lock for accessing file_list
         self.error_log = []
-        self.notification_lock = threading.Lock()  # Lock for notifications
+        self.notification_lock = threading.Lock()  #lock for notifications
 
     def get_client_socket(self, username):
-        """Retrieve the socket associated with a given username."""
         with self.clients_lock:
             return self.clients.get(username)
 
     def start_server(self, port):
         try:
+            #creating the socket for the server to start it
             self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.server_socket.bind(("", port))
             self.server_socket.listen(5)
@@ -34,10 +34,10 @@ class Server:
         try:
             while True:
                 try:
+                    #creating thread for each client
                     client_socket, client_address = self.server_socket.accept()
                     threading.Thread(target=self.handle_client, args=(client_socket,), daemon=True).start()
                 except OSError:
-                    # Server socket has been closed
                     break
         except Exception as e:
             self.log_message(f"Error accepting clients: {e}")
@@ -47,10 +47,11 @@ class Server:
         disconnection_logged = False
         client_registered = False
         try:
-            client_socket.settimeout(60)  # 60 seconds timeout
+            client_socket.settimeout(60) 
 
-            # Receive username
+            #receive username of the client
             client_name = client_socket.recv(1024).decode().strip()
+            #checking the username
             if not client_name:
                 client_socket.send("ERROR: Username cannot be empty.".encode())
                 client_socket.close()
@@ -62,21 +63,22 @@ class Server:
                     client_socket.close()
                     return
                 self.clients[client_name] = client_socket
-                client_registered = True  # Mark as registered
+                client_registered = True  #mark as registered
 
             self.log_message(f"Client connected: {client_name}")
             client_socket.send("CONNECTED".encode())
 
             while True:
                 try:
-                    client_socket.settimeout(300)  # 5 minutes
+                    client_socket.settimeout(300)
                     command = client_socket.recv(1024).decode()
 
                     if not command:
                         self.log_message(f"Client {client_name} disconnected.")
                         disconnection_logged = True
                         break
-
+                    
+                    #handling client operations
                     if command.startswith("UPLOAD"):
                         self.handle_upload(client_name, client_socket, command)
                     elif command.startswith("LIST"):
@@ -88,7 +90,7 @@ class Server:
                     elif command.startswith("DISCONNECT"):
                         self.handle_disconnect(client_name)
                         disconnection_logged = True
-                        # Remove client from self.clients immediately
+                        #remove client from self.clients immediately
                         with self.clients_lock:
                             if client_name in self.clients:
                                 del self.clients[client_name]
@@ -106,10 +108,10 @@ class Server:
         except Exception as e:
             self.log_message(f"Error with client {client_name}: {e}")
         finally:
-            # Ensure cleanup happens
+            #cleanup
             try:
                 with self.clients_lock:
-                    # Only remove if the client was registered by this handler
+                    #remove if the client was registered by this handler
                     if client_registered and client_name and client_name in self.clients:
                         del self.clients[client_name]
                         if not disconnection_logged:
@@ -127,6 +129,8 @@ class Server:
             _, filename, filesize = parts
             filename = filename.strip()
             filesize = int(filesize.strip())
+
+            #checking the filenamee and the directory
             if not filename:
                 client_socket.send("ERROR: Filename cannot be empty.".encode())
                 return
@@ -137,10 +141,10 @@ class Server:
             full_filename = f"{client_name}_{filename}"
             filepath = os.path.join(self.file_directory, full_filename)
 
-            # **1. Check if the file already exists**
+            #if the file already exists**
             file_exists = os.path.exists(filepath)
 
-            # **2. Receive and write the file data**
+            #receive and write the file data**
             with open(filepath, "wb") as f:
                 bytes_received = 0
                 while bytes_received < filesize:
@@ -151,22 +155,22 @@ class Server:
                     bytes_received += len(chunk)
 
             with self.file_list_lock:
-                # Remove existing entry if any
+                #remove existing entry if any
                 self.file_list = [
                     (f, o) for f, o in self.file_list
                     if not (f == filename and o == client_name)
                 ]
-                # Add the new file
+                #adding the new file
                 self.file_list.append((filename, client_name))
                 self.update_file_list()
 
-            # **3. Prepare the success message based on file existence**
+            #displaying a message based on the existence of the fiile
             if file_exists:
                 success_msg = f"UPLOAD_RESPONSE: File '{filename}' overwritten successfully."
             else:
                 success_msg = f"UPLOAD_RESPONSE: File '{filename}' uploaded successfully."
 
-            # **4. Log and send the success message to the client**
+            #sending the success message to the client**
             self.log_message(success_msg)
             client_socket.send(success_msg.encode())
 
@@ -181,16 +185,16 @@ class Server:
         try:
             file_list_path = os.path.join(self.file_directory, "file_list.txt")
 
-            # Create the file if it doesn't exist
+            #creating the file if it doesn't exist
             if not os.path.exists(file_list_path):
                 with open(file_list_path, "w") as f:
-                    pass  # Create an empty file
+                    pass 
 
-            # Read the file list
+            #reading the file list
             with open(file_list_path, "r") as f:
                 lines = f.readlines()
 
-            # Parse the file list, handling potential formatting issues
+            #parsing the file list, handling potential formatting issues
             self.file_list = []
             for line in lines:
                 line = line.strip()
@@ -199,7 +203,6 @@ class Server:
                         filename, owner = line.split(",")
                         self.file_list.append((filename, owner))
                     except ValueError:
-                        # Log any malformed lines
                         self.log_message(f"Malformed line in file list: {line}")
 
             self.log_message(f"Loaded {len(self.file_list)} files from file list.")
@@ -211,10 +214,10 @@ class Server:
         try:
             file_list_path = os.path.join(self.file_directory, "file_list.txt")
 
-            # Ensure directory exists
+            #ensure directory exists
             os.makedirs(os.path.dirname(file_list_path), exist_ok=True)
 
-            # Write the file list
+            #write the file list
             with open(file_list_path, "w") as f:
                 for filename, owner in self.file_list:
                     f.write(f"{filename},{owner}\n")
@@ -225,11 +228,10 @@ class Server:
 
     def handle_list(self, client_socket):
         try:
-            # Ensure file list is loaded
             if not self.file_list:
                 self.load_file_list()
 
-            # Prepare file list message
+            #preparing file list message
             if self.file_list:
                 file_list_message = "\n".join([f"{filename} (Owner: {owner})" for filename, owner in self.file_list])
                 client_socket.send(file_list_message.encode())
@@ -254,6 +256,7 @@ class Server:
                 return
             _, filename = parts
             filename = filename.strip()
+            #checking the filename
             if not filename:
                 client_socket.send("ERROR: Filename cannot be empty.".encode())
                 return
@@ -263,6 +266,7 @@ class Server:
 
             with self.file_list_lock:
                 if (filename, client_name) in self.file_list:
+                    #deleting if the file exists
                     if os.path.exists(filepath):
                         os.remove(filepath)
                         self.file_list.remove((filename, client_name))
@@ -270,23 +274,24 @@ class Server:
                         success_msg = f"DELETE_RESPONSE: File '{filename}' deleted successfully."
                         client_socket.send(success_msg.encode())
                         self.log_message(f"{client_name} deleted file '{filename}'.")
+                        #displaying an error message if the file does not exist
                     else:
                         client_socket.send("ERROR: File does not exist.".encode())
                         self.log_message(f"{client_name} attempted to delete non-existent file '{filename}'.")
                 else:
-                    # Check if the file exists but is owned by another client
+                    #check if the file exists but is owned by another client
                     file_exists = False
                     for f, o in self.file_list:
                         if f == filename:
                             file_exists = True
                             if o != client_name:
-                                # File is owned by someone else
+                                #if file is owned by someone else
                                 error_msg = "ERROR: You cannot delete a file you didn't upload."
                                 client_socket.send(error_msg.encode())
                                 self.log_message(f"{client_name} attempted to delete '{filename}' owned by '{o}'.")
                                 return
                     if not file_exists:
-                        # File does not exist at all
+                        #if file does not exist 
                         error_msg = f"ERROR: File '{filename}' does not exist."
                         client_socket.send(error_msg.encode())
                         self.log_message(error_msg)
@@ -308,18 +313,22 @@ class Server:
             _, filename, owner = parts
             filename = filename.strip()
             owner = owner.strip()
+
+            #checking filename and owner
             if not filename or not owner:
                 client_socket.send("ERROR: Filename and owner cannot be empty.".encode())
                 return
             full_filename = f"{owner}_{filename}"
             filepath = os.path.join(self.file_directory, full_filename)
+
+            #displaying an error message if the file does not exist
             if not os.path.exists(filepath):
                 client_socket.send("ERROR: File does not exist.".encode())
                 return
             file_size = os.path.getsize(filepath)
             client_socket.send(f"FILESIZE {file_size}".encode())
 
-            # **Wait for client's READY acknowledgment**
+            #waiting for client's READY acknowledgment
             try:
                 ready_message = client_socket.recv(1024).decode().strip()
                 if ready_message != "READY":
@@ -329,13 +338,13 @@ class Server:
                 self.log_message(f"Timeout waiting for READY from {client_name}. Aborting download.")
                 return
 
-            # Notify the owner that their file is being downloaded
+            #notifying the owner that their file is being downloaded
             owner_socket = self.get_client_socket(owner)
             if owner_socket:
                 owner_socket.send(f"NOTIFICATION: Your file '{filename}' was downloaded by '{client_name}'.".encode())
                 self.log_message(f"Sent download notification to {owner}")
 
-            # **Send the file data**
+            #sending the file data
             with open(filepath, "rb") as f:
                 while True:
                     chunk = f.read(4096)
@@ -356,7 +365,7 @@ class Server:
     def log_message(self, message):
         try:
             self.log_listbox.insert(END, message)
-            # Also log to a file for persistent debugging
+            
             with open('server_log.txt', 'a') as log_file:
                 log_file.write(message + '\n')
         except Exception as e:
@@ -368,7 +377,7 @@ class Server:
         self.error_log.append(full_error_message)
         self.log_message(full_error_message)
 
-        # Write to error log file
+        
         try:
             with open('server_error_log.txt', 'a') as error_file:
                 error_file.write(full_error_message + '\n\n')
@@ -399,13 +408,13 @@ class Server:
         if not self.file_directory:
             self.log_message("Error: File directory must be selected before starting the server.")
             return
-        if self.server_socket:  # Check if the server is already running
+        if self.server_socket:  #checking if the server is already running
             self.log_message("Server is already running.")
             return
         try:
             port = int(self.port_entry.get())
             self.start_server(port)
-            # Disable the "Start Server" button
+            #disabling the "Start Server" button
             self.start_button.config(state='disabled')
         except ValueError:
             self.log_message("Error: Please enter a valid port number.")
@@ -414,7 +423,7 @@ class Server:
         try:
             self.log_message("Shutting down server...")
 
-            # Notify all clients about server shutdown
+            #notifying all clients that the server is shutdown
             with self.clients_lock:
                 for client_name in list(self.clients.keys()):
                     client_socket = self.clients[client_name]
@@ -429,15 +438,15 @@ class Server:
                         self.log_message(f"Disconnected client {client_name}")
                         self.clients.pop(client_name, None)  # Remove client from the list
 
-            # Stop accepting new clients
+            #stop accepting new clients
             if self.server_socket:
                 self.server_socket.close()
                 self.server_socket = None
 
-            # Re-enable the "Start Server" button
+            #reenable start button
             self.start_button.config(state='normal')
 
-            # Exit the application
+            #exit the application
             self.root.quit()
             self.root.destroy()
             self.log_message("Server closed successfully.")
@@ -447,6 +456,7 @@ class Server:
             self.root.destroy()
 
     def select_directory(self):
+        #selecting the directory for the files to upload
         selected_directory = filedialog.askdirectory()
         if not selected_directory:
             self.log_message("Directory not selected.")
